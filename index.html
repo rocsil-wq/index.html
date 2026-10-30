@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>G+ Unblocked Pokémon Battle</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #222;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #game-container {
+            width: 500px;
+            background-color: #333;
+            border: 4px solid #fff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        .battle-screen {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            height: 120px;
+        }
+        .pokemon-card {
+            width: 45%;
+            background-color: #444;
+            border: 2px solid #fff;
+            border-radius: 5px;
+            padding: 10px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .name { font-weight: bold; font-size: 1.2rem; text-transform: uppercase; }
+        .hp-bar-container {
+            background-color: #555;
+            height: 15px;
+            border: 1px solid #fff;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        .hp-bar {
+            background-color: #4CAF50;
+            height: 100%;
+            width: 100%;
+            transition: width 0.3s ease;
+        }
+        .hp-text { text-align: right; font-size: 0.8rem; margin-top: 3px; }
+        #text-box {
+            background-color: #111;
+            border: 2px solid #fff;
+            min-height: 60px;
+            padding: 10px;
+            margin-bottom: 20px;
+            font-size: 1rem;
+            line-height: 1.4;
+        }
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        button {
+            background-color: #fff;
+            color: #000;
+            border: none;
+            padding: 12px;
+            font-family: inherit;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 5px;
+            text-transform: uppercase;
+        }
+        button:hover { background-color: #ddd; }
+        button:disabled { background-color: #555; color: #888; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div class="battle-screen">
+        <!-- Player Pokémon -->
+        <div class="pokemon-card" id="player-card">
+            <div>
+                <div class="name" id="player-name">PIKACHU</div>
+                <div class="hp-bar-container">
+                    <div class="hp-bar" id="player-hp-bar"></div>
+                </div>
+            </div>
+            <div class="hp-text" id="player-hp-text">100 / 100 HP</div>
+        </div>
+        
+        <!-- Enemy Pokémon -->
+        <div class="pokemon-card" id="enemy-card">
+            <div>
+                <div class="name" id="enemy-name">CHARIZARD</div>
+                <div class="hp-bar-container">
+                    <div class="hp-bar" id="enemy-hp-bar"></div>
+                </div>
+            </div>
+            <div class="hp-text" id="enemy-hp-text">120 / 120 HP</div>
+        </div>
+    </div>
+
+    <!-- Battle Log Window -->
+    <div id="text-box">What will PIKACHU do?</div>
+
+    <!-- Move Options -->
+    <div class="controls">
+        <button onclick="playerTurn('Thunderbolt', 25)">Thunderbolt</button>
+        <button onclick="playerTurn('Quick Attack', 12)">Quick Attack</button>
+        <button onclick="playerTurn('Iron Tail', 18)">Iron Tail</button>
+        <button onclick="resetGame()" id="reset-btn" style="display:none; grid-column: span 2; background-color: #f44336; color: white;">Play Again</button>
+    </div>
+</div>
+
+<script>
+    // Game State Objects
+    const player = { name: "Pikachu", hp: 100, maxHp: 100 };
+    const enemy = { name: "Charizard", hp: 120, maxHp: 120 };
+    
+    const enemyMoves = [
+        { name: "Flamethrower", power: 22 },
+        { name: "Slash", power: 14 },
+        { name: "Air Slash", power: 18 }
+    ];
+
+    let isTurnProcessing = false;
+
+    // Core Game Function
+    function playerTurn(moveName, damage) {
+        if (isTurnProcessing) return;
+        isTurnProcessing = true;
+        disableButtons(true);
+
+        // 1. Player Attacks
+        enemy.hp = Math.max(0, enemy.hp - damage);
+        updateUI();
+        updateLog(`${player.name.toUpperCase()} used ${moveName.toUpperCase()}! Deals ${damage} damage.`);
+
+        // Check if enemy fainted
+        if (enemy.hp <= 0) {
+            setTimeout(() => {
+                updateLog(`${enemy.name.toUpperCase()} fainted! You WIN! 🎉`);
+                endGame();
+            }, 1500);
+            return;
+        }
+
+        // 2. Enemy Attacks (Happens after a short delay)
+        setTimeout(() => {
+            const randomMove = enemyMoves[Math.floor(Math.random() * enemyMoves.length)];
+            player.hp = Math.max(0, player.hp - randomMove.power);
+            updateUI();
+            updateLog(`${enemy.name.toUpperCase()} used ${randomMove.name.toUpperCase()}! Deals ${randomMove.power} damage.`);
+
+            // Check if player fainted
+            if (player.hp <= 0) {
+                setTimeout(() => {
+                    updateLog(`${player.name.toUpperCase()} fainted! You lost... 😢`);
+                    endGame();
+                }, 1500);
+                return;
+            }
+
+            // Return controls back to player
+            setTimeout(() => {
+                updateLog(`What will ${player.name.toUpperCase()} do?`);
+                disableButtons(false);
+                isTurnProcessing = false;
+            }, 1500);
+
+        }, 1500);
+    }
+
+    // Dynamic UI Updates
+    function updateUI() {
+        // Update HP Numbers
+        document.getElementById('player-hp-text').innerText = `${player.hp} / ${player.maxHp} HP`;
+        document.getElementById('enemy-hp-text').innerText = `${enemy.hp} / ${enemy.maxHp} HP`;
+
+        // Update Graphical Bars
+        const playerHpPct = (player.hp / player.maxHp) * 100;
+        const enemyHpPct = (enemy.hp / enemy.maxHp) * 100;
+        
+        const pBar = document.getElementById('player-hp-bar');
+        const eBar = document.getElementById('enemy-hp-bar');
+        
+        pBar.style.width = playerHpPct + '%';
+        eBar.style.width = enemyHpPct + '%';
+
+        // Dynamic Color Tweak for Danger Status
+        pBar.style.backgroundColor = playerHpPct < 25 ? '#f44336' : playerHpPct < 50 ? '#ffeb3b' : '#4CAF50';
+        eBar.style.backgroundColor = enemyHpPct < 25 ? '#f44336' : enemyHpPct < 50 ? '#ffeb3b' : '#4CAF50';
+    }
+
+    function updateLog(message) {
+        document.getElementById('text-box').innerText = message;
+    }
+
+    function disableButtons(status) {
+        const buttons = document.querySelectorAll('.controls button:not(#reset-btn)');
+        buttons.forEach(btn => btn.disabled = status);
+    }
+
+    function endGame() {
+        document.getElementById('reset-btn').style.display = 'block';
+        disableButtons(true);
+    }
+
+    function resetGame() {
+        player.hp = player.maxHp;
+        enemy.hp = enemy.maxHp;
+        updateUI();
+        updateLog(`What will ${player.name.toUpperCase()} do?`);
+        document.getElementById('reset-btn').style.display = 'none';
+        disableButtons(false);
+        isTurnProcessing = false;
+    }
+
+    // Initial setup run
+    updateUI();
+</script>
+
+</body>
+</html>
